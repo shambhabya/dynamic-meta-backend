@@ -23,70 +23,124 @@ app.get("/api/generate-og-image", async (req, res) => {
       <html>
         <head>
           <style>
-            body {
-              margin: 0;
-              padding: 0;
-              font-family: Arial, sans-serif;
-            }
-            .container {
+
+          body{
+          margin: 3px;
+          padding: 3px;
+          }
+            .preview-container {
               width: 1200px;
-              height: 630px;
               display: flex;
-              flex-direction: ${template !== "template2" ? "column" : "row"};
+              flex-direction: column;
               align-items: center;
               justify-content: center;
-              background-color: ${getBackgroundColor(background)};
-              padding: 40px;
-              box-sizing: border-box;
+              height: 630px;
             }
+            
+            .preview {
+              width: 100%;
+              display: flex;
+              align-items: center;
+              border-radius: 0.375rem;
+              height: 100%;
+            }
+            
+            .preview.template1 {
+              flex-direction: column;
+              font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            }
+            
+            .preview.template2 {
+              flex-direction: row;
+              justify-content: space-between;
+              border: 4px solid #020202;
+              font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+            }
+            
+            .preview.template3 {
+              flex-direction: column;
+              filter: grayscale(100%);
+              border: 2px solid rgb(66, 65, 65);
+              font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+            }
+            
             .content {
-              padding: 20px;
+              width: 100%;
+              align-items: center;
+              justify-content: center;
+              display: flex;
+              flex-direction: column;
+              padding: 10px;
             }
-            h1 {
-              font-size: 48px;
+            
+            .template2 .content {
+              width: 50%;
+              height: 100%;
+            }
+            
+            .content h3 {
+              font-size: 1.25rem;
               font-weight: bold;
-              margin: 0;
             }
-            p {
-              font-size: 24px;
-              margin-top: 20px;
+            
+            .content p {
+              margin-top: 4px;
             }
+            
+            .image {
+              height: 100%;
+              width: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              overflow: hidden;
+            }
+            
             img {
-              max-width: 100%;
-              max-height: 100%;
-              object-fit: cover;
-              border-radius: 8px;
+              border-radius: 0.375rem;
+              width: 100%;
             }
+            
+            .bg-red-200 { background-color: #FED7D7; }
+            .bg-blue-200 { background-color: #BEE3F8; }
+            .bg-green-200 { background-color: #C6F6D5; }
+            .bg-white { background-color: #FFFFFF; }
+            .bg-purple-200 { background-color: #E9D8FD; }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="content">
-              <h1>${truncate(decodeURIComponent(title || ""), 100)}</h1>
-              <p>${truncate(
-                decodeURIComponent(description || ""),
-                imageUrl ? 70 : 200
-              )}</p>
+          <div class="preview-container">
+            <div class="preview ${background} ${template}">
+              <div class="content">
+                <h3>${truncate(decodeURIComponent(title || ""), 100)}</h3>
+                <p>${truncate(
+                  decodeURIComponent(description || ""),
+                  imageUrl ? 70 : 300
+                )}</p>
+              </div>
+              <div class="image">
+                ${
+                  imageUrl
+                    ? `<img src="${decodeURIComponent(
+                        imageUrl
+                      )}" alt="Preview" />`
+                    : ""
+                }
+              </div>
             </div>
-            ${
-              imageUrl
-                ? `<img src="${decodeURIComponent(imageUrl)}" alt="Preview" />`
-                : ""
-            }
           </div>
         </body>
       </html>
     `;
 
     await page.setContent(html, { waitUntil: "networkidle0" });
-    await page.setViewport({ width: 1200, height: 630 });
+    await page.setViewport({ width: 1215, height: 640 });
 
     const imageBuffer = await page.screenshot({ type: "png" });
 
     await browser.close();
 
     res.setHeader("Content-Type", "image/png");
-
     res.send(imageBuffer);
   } catch (error) {
     console.error("Error generating image:", error);
@@ -97,17 +151,6 @@ app.get("/api/generate-og-image", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
-
-function getBackgroundColor(background) {
-  const colors = {
-    "bg-red-200": "#FED7D7",
-    "bg-blue-200": "#BEE3F8",
-    "bg-green-200": "#C6F6D5",
-    "bg-white": "#FFFFFF",
-    "bg-purple-200": "#E9D8FD",
-  };
-  return colors[background] || "#FFFFFF";
-}
 
 function truncate(str, maxLength) {
   return str.length > maxLength ? str.slice(0, maxLength) + "..." : str;
