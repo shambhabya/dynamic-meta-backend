@@ -3,6 +3,7 @@ const cors = require("cors");
 const puppeteer = require("puppeteer");
 const bodyParser = require("body-parser");
 require("dotenv").config();
+const genericPool = require("generic-pool");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,23 +11,39 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
+const browserPool = genericPool.createPool(
+  {
+    create: async () => {
+      return await puppeteer.launch({
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--single-process",
+          "--no-zygote",
+        ],
+        executablePath:
+          process.env.NODE_ENV === "production"
+            ? process.env.PUPPETEER_EXECUTABLE_PATH
+            : puppeteer.executablePath(),
+      });
+    },
+    destroy: async (browser) => {
+      await browser.close();
+    },
+  },
+  {
+    max: 10, // maximum size of the pool
+    min: 2, // minimum size of the pool
+  }
+);
+
 app.get("/api/generate-og-image", async (req, res) => {
   const { title, description, imageUrl, background, template } = req.query;
   console.log(req.query);
+  let browser;
 
   try {
-    const browser = await puppeteer.launch({
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--single-process",
-        "--no-zygote",
-      ],
-      executablePath:
-        process.env.NODE_ENV === "production"
-          ? process.env.PUPPETEER_EXCECUTABLE_PATH
-          : puppeteer.executablePath(),
-    });
+    browser = await browserPool.acquire();
     const page = await browser.newPage();
 
     const html = `
