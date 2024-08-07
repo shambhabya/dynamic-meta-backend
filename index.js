@@ -158,6 +158,10 @@ app.get("/api/generate-og-image", async (req, res) => {
   }
 });
 
+app.all("*", (req, res) => {
+  res.send("all okay");
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
